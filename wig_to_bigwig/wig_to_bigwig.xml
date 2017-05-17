@@ -1,0 +1,175 @@
+<?xml version="1.0"?>
+<tool id="wig_to_bigwig" name="wigToBigWig" version="1.0">
+    <description>Converts a wiggle file to bigWig format</description>
+
+    <macros>
+        <import>ucsc_macros.xml</import>
+    </macros>
+
+    <requirements>
+        <requirement type="package" version="340">ucsc_bigwig</requirement>
+    </requirements>
+
+    <command detect_errors="exit_code">
+<![CDATA[
+    @OPTIONAL_PARAM_FUNC@
+
+    wigToBigWig
+        ${clip}
+        ${adv.fixed_summaries}
+        ${adv.keep_all_chromosomes}
+        $optional_param("-blockSize", $adv.block_size)
+        $optional_param("-itemsPerSlot", $adv.items_per_slot)
+        ${adv.no_compression}
+        "${wig_input}" "${chrominfo_input}" "${bw_output}"
+]]>
+    </command>
+    <inputs>
+        <param name="wig_input" type="data" format="wig" label="Wiggle input file" />
+
+        <param name="chrominfo_input" type="data" format="tabular"
+                label="Chromosomes sizes file" />
+
+        <param name="clip" type="boolean" checked="false"
+                truevalue="-clip" falsevalue=""
+                label="Clip items that extend beyond the scaffolds"
+                help="-clip" />
+
+        <section name="adv" title="Advanced options" expanded="false">
+            <param name="fixed_summaries" type="boolean" checked="false"
+                    truevalue="-fixedSummaries" falsevalue=""
+                    label="Use a pre-defined sequence of summary levels"
+                    help="Calculate summaries based on the zoom levels of the Ensembl genome browser (-fixedSummaries)" />
+
+            <param name="keep_all_chromosomes" type="boolean" checked="false"
+                    truevalue="-keepAllChromosomes" falsevalue=""
+                    label="Store all scaffolds in b-tree"
+                    help="-keepAllChromosomes" />
+
+            <param name="block_size" type="integer" label="Block size"
+                    min="1" optional="true"
+                    help="Number of items to bundle in r-tree" />
+
+            <param name="items_per_slot" type="integer" label="Items per slot"
+                    min="1" optional="true"
+                    help="Number of data points bundled at the lowest level" />
+
+            <param name="no_compression" type="boolean" checked="false"
+                    truevalue="-unc" falsevalue=""
+                    label="Do not use compression"
+                    help="-unc" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="bw_output" format="bigwig" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- Test wigToBigWig with variableStep wiggle -->
+            <param name="wig_input" value="contigs.variableStep.wig" ftype="wig" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <output name="bw_output" file="contigs.variableStep.bw" />
+        </test>
+        <test>
+            <!-- Test wigToBigWig with fixedStep wiggle -->
+            <param name="wig_input" value="contigs.fixedStep.wig" ftype="wig" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <output name="bw_output" file="contigs.fixedStep.bw" />
+        </test>
+        <test>
+            <!-- Test wigToBigWig with items that extend beyond the scaffold length -->
+            <param name="wig_input" value="contigs.clip.wig" ftype="wig" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="clip" value="-clip" />
+            <output name="bw_output" file="contigs.clip.bw" />
+        </test>
+        <test>
+            <!-- Test wigToBigWig with advanced options -->
+            <param name="wig_input" value="contigs.variableStep.wig" ftype="wig" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="block_size" value="200" />
+            <param name="items_per_slot" value="500" />
+            <param name="no_compression" value="-unc" />
+            <output name="bw_output" file="contigs.advanced.bw" />
+        </test>
+        <test>
+            <!-- Test wigToBigWig with bigWigCat compatibility options -->
+            <param name="wig_input" value="contigs.variableStep.wig" ftype="wig" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="fixed_summaries" value="-fixedSummaries" />
+            <param name="keep_all_chromosomes" value="-keepAllChromosomes" />
+            <output name="bw_output" file="contigs.bigWigCat.bw" />
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+**What it does**
+
+wigToBigWig converts a file in either the variableStep or fixedStep
+`wiggle formats <https://genome.ucsc.edu/goldenpath/help/wiggle.html>`_
+to the `bigWig format <https://genome.ucsc.edu/goldenpath/help/bigWig.html>`_.
+
+----
+
+**Two types of wiggle files**
+
+A wiggle file is composed of declaration lines and data lines. There are two
+formatting options for wiggle files:
+
+1. **variableStep format**
+   ::
+
+      variableStep chrom=chrN [span=windowSize]
+      chromStartA dataValue1
+      chromStartA dataValue2
+
+2. **fixedStep format**
+   ::
+
+      fixedStep chrom=chrN start=position step=stepInterval [span=windowSize]
+      dataValue1
+      dataValue2
+
+----
+
+.. class:: infomark
+
+**Coordinate system for the wiggle format**
+
+Unlike the BED and bedGraph formats, the coordinate system used by the
+wiggle format are `1-based, fully-closed`_. The start position for the
+first nucleotide of a sequence is at position 1. The end position for
+the last nucleotide of a sequence with length N is N.
+
+----
+
+.. class:: warningmark
+
+**Compatibility with bigWigCat**
+
+In order to merge multiple bigWig files into a single file using ``bigWigCat``,
+the bigWig files should be created using the ``-fixedSummaries`` and
+``-keepAllChromosomes`` options (available under "Advanced options").
+See the UCSC Genome Browser `Google Groups discussions`_ for details.
+
+----
+
+.. class:: infomark
+
+**Chromosomes sizes file**
+
+This tool requires a chromosomes sizes (``chrom.sizes``) file, which lists the size of
+each scaffold within an assembly. For genome assemblies that are hosted by UCSC,
+the ``chrom.sizes`` file is available through the
+`Sequence and Annotation Downloads <http://hgdownload.cse.ucsc.edu/downloads.html>`_ page.
+The `twoBitInfo <https://genome.ucsc.edu/goldenpath/help/twoBit.html>`_ tool
+can be used to generate the ``chrom.sizes`` for the genome assemblies that are not hosted
+by UCSC.
+
+.. _1-based, fully-closed: http://genome.ucsc.edu/blog/the-ucsc-genome-browser-coordinate-counting-systems/
+.. _Google Groups discussions: https://groups.google.com/a/soe.ucsc.edu/forum/#!searchin/genome/fixedSummaries/genome/n3As-4DRyLY/khp7HjaWIh8J
+
+    ]]></help>
+
+    <expand macro="citations" />
+</tool>

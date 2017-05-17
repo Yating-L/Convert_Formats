@@ -1,0 +1,21 @@
+# This is a sample file which specifies the location of the UCSC AutoSql
+# schemas used to create bigBed files with extra fields. AutoSql was
+# originally developed to facilitate the generation of SQL and C code
+# from the same schema (see: http://www.linuxjournal.com/article/5949).
+#
+# Many AutoSql schemas are available for download through the
+# UCSC Kent source tree (http://genome-source.cse.ucsc.edu/gitweb/).
+# These schemas are available under the following directories:
+#
+# - ${KENT_SRC}/hg/lib
+# - ${KENT_SRC}/hg/lib/encode/
+#
+#
+# The autosql_schemas.loc file has the following format:
+# (The different columns are separated by the TAB character.)
+#
+# <unique_id>	<display_name>	<type>	<file_path>
+# narrowPeak.as	narrowPeak	bed6+4	/path/to/hg/lib/encode/narrowPeak.as
+# broadPeak.as	broadPeak	bed6+3	/path/to/hg/lib/encode/broadPeak.as
+# ...
+#

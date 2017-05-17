@@ -1,0 +1,7 @@
+<tables>
+    <!-- Path to local UCSC AutoSql schemas (sample) -->
+    <table name="autosql_table" comment_char="#">
+        <columns>value, name, type, path</columns>
+        <file path="tool-data/autosql_schemas.loc" />
+    </table>
+</tables>

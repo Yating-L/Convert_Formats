@@ -1,0 +1,10 @@
+name: bed_to_bigbed_340
+owner: yating-l
+description: Converts a BED file into bigBed format
+type: unrestricted
+homepage_url: http://hgdownload.soe.ucsc.edu/admin/exe/
+categories: [Convert Formats]
+long_description: |
+  This tool converts a BED file to a bigBed file. The bigBed file
+  can contain extra fields that are defined by an AutoSql file
+  (http://genomewiki.ucsc.edu/index.php/AutoSql).

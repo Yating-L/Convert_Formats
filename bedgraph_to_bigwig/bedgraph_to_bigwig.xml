@@ -1,0 +1,128 @@
+<?xml version="1.0"?>
+<tool id="bedgraph_to_bigwig" name="bedGraphToBigWig" version="1.0">
+    <description>Converts a bedGraph file to bigWig format</description>
+
+    <macros>
+        <import>ucsc_macros.xml</import>
+    </macros>
+
+    <requirements>
+        <requirement type="package" version="340">ucsc_bigwig</requirement>
+        <requirement type="package" version="340">ucsc_bigbed</requirement>
+    </requirements>
+
+    <command detect_errors="exit_code">
+<![CDATA[
+    @OPTIONAL_PARAM_FUNC@
+
+    ## Allow UCSC track and browser lines in input file
+    awk '$0 !~ /^(track|browser) /' "${bedgraph_input}" |
+
+        #if str($bed_clip) == "bedClip":
+            bedClip -verbose=2
+                stdin "${chrominfo_input}" stdout |
+        #end if
+
+        sort -k 1,1 -k 2,2n  > "${bedgraph_input}".sorted &&
+
+        bedGraphToBigWig
+            $optional_param("-blockSize", $adv.block_size)
+            $optional_param("-itemsPerSlot", $adv.items_per_slot)
+            ${adv.no_compression}
+            "${bedgraph_input}".sorted "${chrominfo_input}" "${bw_output}"
+]]>
+    </command>
+
+    <expand macro="environment_LC_COLLATE" />
+
+    <inputs>
+        <param name="bedgraph_input" type="data" format="bedgraph"
+                label="bedGraph input file" />
+
+        <param name="chrominfo_input" type="data" format="tabular"
+                label="Chromosomes sizes file" />
+
+        <param name="bed_clip" type="boolean" checked="false"
+                truevalue="bedClip" falsevalue=""
+                label="Remove BED items that extend beyond the scaffolds"
+                help="bedClip" />
+
+        <section name="adv" title="Advanced options" expanded="false">
+            <param name="block_size" type="integer" label="Block size"
+                    min="1" optional="true"
+                    help="Number of items to bundle in r-tree" />
+
+            <param name="items_per_slot" type="integer" label="Items per slot"
+                    min="1" optional="true"
+                    help="Number of data points bundled at the lowest level" />
+
+            <param name="no_compression" type="boolean" checked="false"
+                    truevalue="-unc" falsevalue=""
+                    label="Do not use compression"
+                    help="-unc" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="bw_output" format="bigwig" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- Test bedGraphToBigWig with default settings -->
+            <param name="bedgraph_input" value="contigs.bedgraph" ftype="bedgraph" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <output name="bw_output" file="contigs.bedgraph.bw" />
+        </test>
+        <test>
+            <!-- Test bedGraphToBigWig with advanced options -->
+            <param name="bedgraph_input" value="contigs.bedgraph" ftype="bedgraph" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="block_size" value="200" />
+            <param name="items_per_slot" value="500" />
+            <param name="no_compression" value="-unc" />
+            <output name="bw_output" file="contigs.bedgraph_advanced.bw" />
+        </test>
+        <test>
+            <!-- Test bedGraphToBigWig with default settings -->
+            <param name="bedgraph_input" value="contigs.clip.bedGraph" ftype="bedgraph" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="bed_clip" value="bedClip" />
+            <output name="bw_output" file="contigs.bedgraph_clip.bw" />
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+**What it does**
+
+bedGraphToBigWig converts a `bedGraph <https://genome.ucsc.edu/goldenpath/help/bedgraph.html>`_ file
+to the `bigWig format <https://genome.ucsc.edu/goldenpath/help/bigWig.html>`_.
+
+----
+
+**The bedGraph format**
+
+The first three columns of the bedGraph file are the same as the
+`BED format <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_, and it uses
+a `zero-start, half-open <http://genome.ucsc.edu/blog/the-ucsc-genome-browser-coordinate-counting-systems/>`_
+coordinate system. The fourth column of the bedGraph file contains the data values::
+
+    chromA chromStartA chromEndA dataValueA
+    chromB chromStartB chromEndB dataValueB
+
+----
+
+.. class:: infomark
+
+**Chromosomes sizes file**
+
+This tool requires a chromosomes sizes (``chrom.sizes``) file, which lists the size of
+each scaffold within an assembly. For genome assemblies that are hosted by UCSC,
+the ``chrom.sizes`` file is available through the
+`Sequence and Annotation Downloads <http://hgdownload.cse.ucsc.edu/downloads.html>`_ page.
+The `twoBitInfo <https://genome.ucsc.edu/goldenpath/help/twoBit.html>`_ tool
+can be used to generate the ``chrom.sizes`` for the genome assemblies that are not hosted
+by UCSC.
+
+    ]]></help>
+
+    <expand macro="citations" />
+</tool>

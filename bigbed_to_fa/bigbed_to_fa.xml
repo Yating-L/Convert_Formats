@@ -1,0 +1,110 @@
+<?xml version="1.0"?>
+<tool id="bigbed_to_fa" name="bigBedToFa" version="1.0">
+    <description>Retrieve sequences associated with bigBed features</description>
+
+    <macros>
+        <import>ucsc_macros.xml</import>
+    </macros>
+
+    <expand macro="requirements_twobit">
+        <requirement type="package" version="340">ucsc_bigbed</requirement>
+    </expand>
+
+    <command detect_errors="exit_code">
+<![CDATA[
+    #set no_mask = ""
+    #if str($masking_option) == "upper":
+        #set no_mask = "-noMask"
+    #end if
+
+    ${__tool_directory__}/bigbed_to_standard_bed.pl -i "${bigbed_input}" |
+        twoBitToFa ${no_mask} -bed=stdin "${twobit_input}" stdout
+
+    ## Add extra option to change soft masked bases to N's
+    #if str($masking_option) == "hard":
+        | awk '{ if (/^>/) { print } else { gsub(/[acgt]/, "N"); print } }'
+    #end if
+
+        > "${fasta_output}"
+]]>
+    </command>
+    <inputs>
+        <param name="twobit_input" type="data" format="twobit" label="twoBit input file" />
+
+        <param name="bigbed_input" type="data" format="bigbed" label="bigBed input file" />
+
+        <param name="masking_option" type="select"
+            label="Repeat masking option"
+            help="Specify how repeats within the twoBit file should be represented">
+
+            <option value="upper">Show repeats in uppercase (no masking)</option>
+
+            <option value="lower" selected="true">Show repeats in lowercase (soft masking)</option>
+
+            <option value="hard">Show repeats as N's (hard masking)</option>
+        </param>
+
+    </inputs>
+    <outputs>
+        <data name="fasta_output" format="fasta" />
+    </outputs>
+    <tests>
+        <test>
+            <!-- Test bigBedToFa with bed4 and default (soft) masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.trf_4.bb" ftype="bigbed" />
+            <output name="fasta_output" file="contigs.trf_4.soft.fa" />
+        </test>
+        <test>
+            <!-- Test bigBedToFa with bed4 and no masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.trf_4.bb" ftype="bigbed" />
+            <param name="masking_option" value="upper" />
+            <output name="fasta_output" file="contigs.trf_4.nomask.fa" />
+        </test>
+        <test>
+            <!-- Test bigBedToFa with bed4 and hard masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.trf_4.bb" ftype="bigbed" />
+            <param name="masking_option" value="hard" />
+            <output name="fasta_output" file="contigs.trf_4.hard.fa" />
+        </test>
+        <test>
+            <!-- Test bigBedToFa with bed4+12 with default masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.trf_4_12.bb" ftype="bigbed" />
+            <output name="fasta_output" file="contigs.trf_4_12.fa" />
+        </test>
+        <test>
+            <!-- Test bigBedToFa with bed6+2 with default masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.models_6_2.bb" ftype="bigbed" />
+            <output name="fasta_output" file="contigs.models_6_2.fa" />
+        </test>
+        <test>
+            <!-- Test bigBedToFa with bed12+2 with default masking -->
+            <param name="twobit_input" value="contigs.out.2bit" ftype="twobit" />
+            <param name="bigbed_input" value="contigs.models_12_2.bb" ftype="bigbed" />
+            <output name="fasta_output" file="contigs.models_12_2.fa" />
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+**What it does**
+
+bigBedToFa retrieves sequences associated with the features in a
+`bigBed <https://genome.ucsc.edu/goldenpath/help/bigBed.html>`_ file
+from a `twoBit Sequence Archive <https://genome.ucsc.edu/goldenpath/help/twoBit.html>`_.
+
+.. class:: infomark
+
+**Extracted sequences:**
+
+For files with `12 standard BED columns <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_,
+this program will concatenate the sequences associated with each block (e.g., exons), and
+exclude the sequences between adjacent blocks (e.g., introns).
+
+    ]]></help>
+
+    <expand macro="citations" />
+</tool>

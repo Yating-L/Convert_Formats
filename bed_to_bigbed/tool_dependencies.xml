@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="ucsc_bigbed" version="340">
+        <repository name="package_ucsc_bigbed_340" owner="yating-l" />
+    </package>
+</tool_dependency>

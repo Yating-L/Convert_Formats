@@ -1,0 +1,264 @@
+<?xml version="1.0"?>
+<tool id="bed_to_bigbed" name="bedToBigBed" version="1.0">
+    <description>Converts a BED file to a bigBed file</description>
+
+    <macros>
+        <import>ucsc_macros.xml</import>
+    </macros>
+
+    <requirements>
+        <requirement type="package" version="340">ucsc_bigbed</requirement>
+    </requirements>
+
+    <command detect_errors="exit_code">
+<![CDATA[
+    @OPTIONAL_PARAM_FUNC@
+
+    #if str($bed_clip) == "bedClip":
+        bedClip -verbose=2
+            "${bed_input}" "${chrominfo_input}" stdout |
+    #else
+        cat ${bed_input} |
+    #end if
+
+        sort -k 1,1 -k 2,2n  > "${bed_input}".sorted &&
+
+        bedToBigBed
+
+            ## Allow users to include spaces when specifying the extraIndex parameter
+            $optional_param("-extraIndex", $extra_index.replace(" ", ""))
+
+            $optional_param("-blockSize", $adv.block_size)
+            $optional_param("-itemsPerSlot", $adv.items_per_slot)
+            ${adv.no_compression}
+            ${adv.tab_separated}
+
+            ## Options for bedPlus format
+            #if str($bedplus.bedplus_selector) == "yes":
+
+                #set asql_src = $bedplus.autosql_source
+                #set asql_selector = str($asql_src['autosql_source_selector'])
+
+                #if asql_selector == "reference_schema":
+                    #set asql_key = str($asql_src['autosql_ref'])
+                    #set (asql_schema, asql_type) = asql_key.split("__")
+
+                    #import os.path
+                    #set asql_path = os.path.join($__tool_directory__, "schemas", asql_schema)
+
+                    -as=${asql_path}
+                    -type=${asql_type}
+
+                #elif asql_selector == "local_schema":
+                    #set asql_local = $asql_src['autosql_local']
+
+                    -as=${asql_local.fields.path}
+                    -type=${asql_local.fields.type}
+
+                #else
+                    #set asql_type = "bed%d+%d" % ($asql_src['num_bed_fields'], $asql_src['num_extra_fields'])
+
+                    -as=$asql_src['autosql_input']
+                    -type=${asql_type}
+                #end if
+            #end if
+
+            "${bed_input}".sorted "${chrominfo_input}" "${bigbed_output}"
+]]>
+    </command>
+
+    <expand macro="environment_LC_COLLATE" />
+
+    <inputs>
+        <param name="bed_input" type="data" format="bed" label="BED file" />
+
+        <param name="chrominfo_input" type="data" format="tabular"
+                label="Chromosomes sizes file" />
+
+        <param name="bed_clip" type="boolean" checked="false"
+                truevalue="bedClip" falsevalue=""
+                label="Remove BED items that extend beyond the scaffolds"
+                help="bedClip" />
+
+        <conditional name="bedplus">
+            <param name="bedplus_selector" type="select"
+                    label="BED file includes extra fields (in bedPlus format)?">
+                <option value="yes">Yes</option>
+                <option value="no" selected="true">No</option>
+            </param>
+
+            <when value="yes">
+                <conditional name="autosql_source">
+                    <param name="autosql_source_selector" type="select"
+                            label="Source of AutoSql schemas"
+                            help="The AutoSql schema defines each field in the bedPlus file">
+                        <option value="reference_schema">Reference schemas</option>
+                        <option value="local_schema">Locally installed schemas</option>
+                        <option value="custom_schema">Custom schema</option>
+                    </param>
+
+                    <when value="reference_schema">
+                        <param name="autosql_ref" type="select"
+                                label="Select a reference schema from the list">
+                            <option value="bigGenePred.as__bed12+8" selected="true">bigGenePred</option>
+                            <option value="bigPsl.as__bed12+12">bigPsl</option>
+                            <option value="cytoband.as__bed4+1">Cytoband</option>
+                            <option value="rmsk16.as__bed6+10">RepeatMasker</option>
+                            <option value="spliceJunctions.as__bed12+1">Splice junctions (regtools)</option>
+                            <option value="trf_simpleRepeat.as__bed4+12">Simple repeats (trfBig)</option>
+                            <option value="tRNAscan.as__bed4+1">tRNAscan-SE</option>
+                        </param>
+                    </when>
+
+                    <when value="local_schema">
+                        <param name="autosql_local" type="select"
+                                label="Select a locally installed AutoSql schema from the list">
+                            <options from_data_table="autosql_table">
+                                <filter type="sort_by" column="2" />
+                                <validator type="no_options" message="No AutoSql schemas available" />
+                            </options>
+                        </param>
+                    </when>
+
+                    <when value="custom_schema">
+                        <param name="autosql_input" type="data" format="txt"
+                            label="Specify a custom AutoSql file from History" />
+
+                        <param name="num_bed_fields" type="integer" min="3" max="12"
+                                value="3" label="Number of BED fields" />
+
+                        <param name="num_extra_fields" type="integer" min="1"
+                                value="1" label="Number of extra fields" />
+                    </when>
+                </conditional>
+            </when>
+
+            <when value="no"></when>
+        </conditional>
+
+        <param name="extra_index" type="text" label="Index fields" optional="true" value=""
+            help="Use a comma-separated list to specify the fields to index (-extraIndex)" />
+
+        <section name="adv" title="Advanced options" expanded="false">
+            <param name="block_size" type="integer" label="Block size"
+                    min="1" optional="true"
+                    help="Number of items to bundle in r-tree" />
+
+            <param name="items_per_slot" type="integer" label="Items per slot"
+                    min="1" optional="true"
+                    help="Number of data points bundled at the lowest level" />
+
+            <param name="no_compression" type="boolean" checked="false"
+                truevalue="-unc" falsevalue=""
+                label="Do not use compression"
+                help="-unc" />
+
+            <param name="tab_separated" type="boolean" checked="false"
+                truevalue="-tab" falsevalue=""
+                label="Expect fields to be tab-separated"
+                help="-tab" />
+        </section>
+    </inputs>
+    <outputs>
+        <data name="bigbed_output" format="bigbed" />
+    </outputs>
+    <tests>
+       <test>
+            <!-- Test bedToBigBed with standard bed columns -->
+            <param name="bed_input" value="contigs_gaps.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <output name="bigbed_output" file="contigs_gaps.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with name index that contains extra spaces -->
+            <param name="bed_input" value="contigs_gaps.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="extra_index" value="  name  " />
+            <output name="bigbed_output" file="contigs_gaps_index.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with advanced options -->
+            <param name="bed_input" value="contigs_gaps.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="block_size" value="200" />
+            <param name="items_per_slot" value="500" />
+            <param name="no_compression" value="-unc" />
+            <param name="tab_separated" value="-tab" />
+            <output name="bigbed_output" file="contigs_gaps_advanced.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with bedClip -->
+            <param name="bed_input" value="contigs_clip.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="bed_clip" value="bedClip" />
+            <output name="bigbed_output" file="contigs_gaps.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with bedPlus and G-OnRamp schema -->
+            <param name="bed_input" value="contigs_cytoband.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="bedplus_selector" value="yes" />
+            <param name="autosql_source_selector" value="reference_schema" />
+            <param name="autosql_ref" value="cytoband.as__bed4+1" ftype="txt" />
+            <output name="bigbed_output" file="contigs_cytoband.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with bedPlus and local schema -->
+            <param name="bed_input" value="contigs_narrowPeak.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="bedplus_selector" value="yes" />
+            <param name="autosql_source_selector" value="local_schema" />
+            <param name="autosql_local" value="narrowPeak.as" />
+            <output name="bigbed_output" file="contigs_narrowPeak.bb" />
+        </test>
+        <test>
+            <!-- Test bedToBigBed with bedPlus and custom schema -->
+            <param name="bed_input" value="contigs_cytoband.bed" ftype="bed" />
+            <param name="chrominfo_input" value="contigs_chromInfo.tab" ftype="tabular" />
+            <param name="bedplus_selector" value="yes" />
+            <param name="autosql_source_selector" value="custom_schema" />
+            <param name="autosql_input" value="cytoband.as" ftype="txt" />
+            <param name="num_bed_fields" value="4" />
+            <param name="num_extra_fields" value="1" />
+            <output name="bigbed_output" file="contigs_cytoband.bb" />
+        </test>
+    </tests>
+    <help>
+<![CDATA[
+**What it does**
+
+This tool converts a `BED <https://genome.ucsc.edu/FAQ/FAQformat.html#format1>`_
+file into a `bigBed <https://genome.ucsc.edu/goldenpath/help/bigBed.html>`_ file.
+
+----
+
+.. class:: infomark
+
+**Chromosomes sizes file**
+
+This tool requires a chromosomes sizes (``chrom.sizes``) file, which lists the size of
+each scaffold within an assembly. For genome assemblies that are hosted by UCSC,
+the ``chrom.sizes`` file is available through the
+`Sequence and Annotation Downloads <http://hgdownload.cse.ucsc.edu/downloads.html>`_ page.
+The `twoBitInfo <https://genome.ucsc.edu/goldenpath/help/twoBit.html>`_ tool
+can be used to generate the ``chrom.sizes`` for the genome assemblies that are not hosted
+by UCSC.
+
+----
+
+.. class:: infomark
+
+**AutoSql files**
+
+The BED input file could contain extra fields (i.e. bedPlus). The definitions for the
+fields in a bedPlus file can be specified using an
+`AutoSql <http://genomewiki.ucsc.edu/index.php/AutoSql>`_ file.
+
+A large collection of AutoSql files are available through the
+`UCSC Genome Browser source tree <https://github.com/ucscGenomeBrowser/kent/tree/master/src/hg/lib>`_
+(files with the .as extension).
+
+    ]]></help>
+
+    <expand macro="citations" />
+</tool>

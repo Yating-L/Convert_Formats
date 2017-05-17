@@ -1,0 +1,44 @@
+<macros>
+    <xml name="requirements_twobit">
+        <requirements>
+            <requirement type="package" version="340">ucsc_twobit</requirement>
+            <yield />
+        </requirements>
+    </xml>
+    <xml name="environment_LC_COLLATE">
+        <environment_variables>
+            <!-- Sort uppercase letters before lowercase (required by UCSC tools) -->
+            <environment_variable name="LC_COLLATE">C</environment_variable>
+            <yield />
+        </environment_variables>
+    </xml>
+    <xml name="citations">
+        <citations>
+            <citation type="bibtex">
+        @article{Kent01062002,
+author = {Kent, W. James and Sugnet, Charles W. and Furey, Terrence S. and Roskin, Krishna M. and Pringle, Tom H. and Zahler, Alan M. and Haussler,  and David},
+title = {The Human Genome Browser at UCSC},
+volume = {12},
+number = {6},
+pages = {996-1006},
+year = {2002},
+doi = {10.1101/gr.229102},
+URL = {http://genome.cshlp.org/content/12/6/996.abstract},
+eprint = {http://genome.cshlp.org/content/12/6/996.full.pdf+html},
+journal = {Genome Research}
+}
+            </citation>
+            <yield />
+        </citations>
+    </xml>
+
+    <token name="@OPTIONAL_PARAM_FUNC@">
+<![CDATA[
+        #def optional_param($_flag, $_flag_value, $_sep="=")
+            #if str($_flag_value) and str($_flag_value).strip():
+                ${_flag}${_sep}${_flag_value}
+            #end if
+        #end def
+]]>
+    </token>
+</macros>

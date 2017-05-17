@@ -1,0 +1,9 @@
+name: bigbed_to_fa_340
+owner: yating-l
+description: Extract sequences associated with bigBed features
+type: unrestricted
+homepage_url: http://hgdownload.soe.ucsc.edu/admin/exe/
+categories: [Convert Formats]
+long_description: |
+  This tool extracts sequences from a twoBit Sequence Archive
+  that corresponds to features in a bigBed file.

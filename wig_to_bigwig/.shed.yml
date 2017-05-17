@@ -1,0 +1,11 @@
+name: wig_to_bigwig_340
+owner: yating-l
+description: Converts a wiggle file to bigWig format
+type: unrestricted
+homepage_url: http://hgdownload.soe.ucsc.edu/admin/exe/
+categories: [Convert Formats]
+long_description: |
+  This tool converts a variableStep or fixedStep wiggle file
+  to a compressed binary format (bigWig). See the 
+  "Wiggle Track Format" page on the UCSC web site for details
+  (https://genome.ucsc.edu/goldenpath/help/wiggle.html).

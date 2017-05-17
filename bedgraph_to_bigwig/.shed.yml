@@ -1,0 +1,10 @@
+name: bedgraph_to_bigwig_340
+owner: yating-l
+description: Converts a bedGraph file to bigWig format
+type: unrestricted
+homepage_url: http://hgdownload.soe.ucsc.edu/admin/exe/
+categories: [Convert Formats]
+long_description: |
+  This tool converts a bedGraph file to the bigWig format. See the
+  "bedGraph Track Format" page on the UCSC web site for details
+  (https://genome.ucsc.edu/goldenpath/help/bedgraph.html).

@@ -1,0 +1,15 @@
+track name="fixedStep" description="fixedStep wiggle" 
+fixedStep chrom=contig10 start=1 step=200 span=150
+10.5
+20.5
+30.5
+40.5
+50.5
+60.5
+fixedStep chrom=contig12 start=1001 step=200 span=150
+10.5
+20.5
+30.5
+40.5
+50.5
+60.5

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="ucsc_bigwig" version="340">
+        <repository name="package_ucsc_bigwig_340" owner="yating-l" />
+    </package>
+</tool_dependency>

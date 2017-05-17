@@ -1,0 +1,20 @@
+track name="variableStep" description="variableStep wiggle" 
+variableStep chrom=contig10 span=150
+1	10.5
+201	20.5
+401	30.5
+601	40.5
+801	50.5
+1001	60.5
+43000	70.5
+variableStep chrom=contig12 span=150
+1001	10.5
+1201	20.5
+1401	30.5
+1601	40.5
+1801	50.5
+2001	60.5
+variableStep chrom=contig12 span=150
+55000	100.5
+56000	200.5
+
